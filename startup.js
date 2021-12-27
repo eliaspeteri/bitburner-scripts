@@ -1,20 +1,20 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-  var numCrackingPrograms = 5;
-  var hackingScript = 'early-hack-template.script';
-  var target = 'the-hub';
+  const debug = false;
+  const hackingScript = '/scripts/hack.script';
+  var target = 'max-hardware';
   var totalThreads = 0;
 
-  var servers = [
+  const servers = [
     'home',
     'n00dles',
     'foodnstuff',
+    'max-hardware',
     'sigma-cosmetics',
     'joesguns',
     'zer0',
     'neo-net',
     'crush-fitness',
-    'I.I.I.I',
     'rho-construction',
     'aerocorp',
     'global-pharm',
@@ -27,8 +27,10 @@ export async function main(ns) {
     'rothman-uni',
     'harakiri-sushi',
     'nectar-net',
+    'iron-gym',
     'silver-helix',
     'johnson-ortho',
+    'I.I.I.I',
     'summit-uni',
     'alpha-ent',
     'snap-fitness',
@@ -44,6 +46,7 @@ export async function main(ns) {
     'the-hub',
     'zb-institute',
     'millenium-fitness',
+    'snap-fitness',
     'galactic-cyber',
     'unitalife',
     'defcomm',
@@ -56,14 +59,15 @@ export async function main(ns) {
   ];
 
   // Start buying servers
-  ns.exec('/scripts/purchaseServers.ns', 'home', 1, 2048);
+  ns.exec('/scripts/purchaseServers.js', 'home', 1, 2048);
 
   // Start custom stats
   ns.exec('/scripts/bitburner/custom_stats.js', 'home');
 
   // Monitor the target
-  ns.exec('/scripts/bitburner/monitor.js', 'home', 1, target);
+  // ns.exec("/scripts/bitburner/monitor.js", "home", 1, target)
 
+  // calculates max threads available
   function calculateThreads(script, hostname) {
     const threads = Math.floor(
       (ns.getServerMaxRam(hostname) - ns.getServerUsedRam(hostname)) /
@@ -73,9 +77,24 @@ export async function main(ns) {
     return threads;
   }
 
+  // calculates server with highest hacking level required, that the player has access to
+  const playerHackingLevel = ns.getHackingLevel();
+  const targetHackingLevel = ns.getHackingLevel(target);
+  for (var i = 0; i < servers.length; i++) {
+    const serverHackingLevel = ns.getServerRequiredHackingLevel(servers[i]);
+    if (
+      serverHackingLevel > targetHackingLevel &&
+      playerHackingLevel >= serverHackingLevel &&
+      ns.hasRootAccess(servers[i])
+    ) {
+      target = servers[i];
+    }
+  }
+  ns.tprint(`Currently targeting ${target}.`);
+
   /* starts hacking scripts on the purchased servers using a random destination from the server list */
-  for (var i = 0; i < ns.getPurchasedServers().length; ++i) {
-    var serv = ns.getPurchasedServers()[i];
+  for (var i = 0; i < ns.getPurchasedServers().length; i++) {
+    const serv = ns.getPurchasedServers()[i];
 
     await ns.scp(hackingScript, 'home', serv);
 
@@ -93,51 +112,35 @@ export async function main(ns) {
   }
 
   /* goes through the list of hacked servers and starts the hacking script on them one by one */
-  for (var i = 0; i < servers.length; ++i) {
-    var serv = servers[i];
-    var portsRequired = ns.getServerNumPortsRequired(serv);
-    await ns.scp(hackingScript, 'home', serv);
-    switch (portsRequired) {
-      case 0: {
-        break;
+  for (var i = 0; i < servers.length; i++) {
+    const serv = servers[i];
+
+    try {
+      if (!ns.hasRootAccess(serv)) {
+        ns.fileExists('brutessh.exe') ? ns.brutessh(serv) : null;
+        ns.fileExists('ftpcrack.exe') ? ns.ftpcrack(serv) : null;
+        ns.fileExists('relaysmtp.exe') ? ns.relaysmtp(serv) : null;
+        ns.fileExists('httpworm.exe') ? ns.httpworm(serv) : null;
+        ns.fileExists('sqlinject.exe') ? ns.sqlinject(serv) : null;
+
+        ns.nuke(serv);
+
+        if (ns.hasRootAccess(serv)) ns.tprint(`Hacked into ${serv}.`);
+        else if (debug) {
+          ns.tprint(
+            `${serv}: Hacking level too small. Player hack level: ${ns.getHackingLevel()}. Required: ${ns.getServerRequiredHackingLevel(
+              serv
+            )}`
+          );
+        }
+      } else if (debug) {
+        ns.tprint(`${serv}: Root access already.`);
       }
-      case 1: {
-        ns.brutessh(serv);
-        break;
-      }
-      case 2: {
-        ns.brutessh(serv);
-        ns.ftpcrack(serv);
-        break;
-      }
-      case 3: {
-        ns.brutessh(serv);
-        ns.ftpcrack(serv);
-        ns.relaysmtp(serv);
-        break;
-      }
-      case 4: {
-        ns.brutessh(serv);
-        ns.ftpcrack(serv);
-        ns.httpworm(serv);
-        ns.relaysmtp(serv);
-        break;
-      }
-      case 5: {
-        ns.brutessh(serv);
-        ns.ftpcrack(serv);
-        ns.httpworm(serv);
-        ns.relaysmtp(serv);
-        ns.sqlinject(serv);
-        break;
-      }
-      default: {
-        break;
-      }
+      await ns.scp(hackingScript, 'home', serv);
+    } catch (error) {
+      if (debug) ns.tprint(String(error));
     }
-    if (!ns.hasRootAccess(serv) && portsRequired <= numCrackingPrograms) {
-      ns.nuke(serv);
-    }
+
     if (
       ns.getServerMaxRam(serv) - ns.getServerUsedRam(serv) > 0 &&
       ns.hasRootAccess(serv) &&
@@ -163,6 +166,6 @@ export async function main(ns) {
 
   // (Re)start Hacknet server
   // ns.killall("hacknet")
-  // await ns.scp("/scripts/hacknet.ns", "home", "hacknet")
-  // ns.exec("/scripts/hacknet.ns", "hacknet")
+  // await ns.scp("/scripts/hacknet.js", "home", "hacknet")
+  // ns.exec("/scripts/hacknet.js", "hacknet")
 }
