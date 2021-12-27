@@ -1,26 +1,38 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-  ns.disableLog('sleep');
-  ns.disableLog('getServerMoneyAvailable');
+  const {
+    args,
+    disableLog,
+    getPurchasedServers,
+    getPurchasedServerLimit,
+    getServerMoneyAvailable,
+    getPurchasedServerCost,
+    purchaseServer,
+    sleep,
+    tprint
+  } = ns;
+
+  disableLog('sleep');
+  disableLog('getServerMoneyAvailable');
 
   var ram = 8;
   var index = 0;
-  ns.args[0] ? (ram = ns.args[0]) : (ram = 8);
-  if (ns.getPurchasedServers.length >= ns.getPurchasedServerLimit()) {
-    ns.tprint('Max number of servers already purchased.');
+  args[0] ? (ram = args[0]) : (ram = 8);
+  if (getPurchasedServers.length >= getPurchasedServerLimit()) {
+    tprint('Max number of servers already purchased.');
   }
-  while (ns.getPurchasedServers().length < ns.getPurchasedServerLimit()) {
-    if (ns.getServerMoneyAvailable('home') >= ns.getPurchasedServerCost(ram)) {
-      ns.purchaseServer(`pserv-${index}`, ram);
-      ns.print(
-        `Purchased server pserv-${index} with ${ram}GB of RAM for \$${ns.getPurchasedServerCost(
+  while (getPurchasedServers().length < getPurchasedServerLimit()) {
+    if (getServerMoneyAvailable('home') >= getPurchasedServerCost(ram)) {
+      purchaseServer(`pserv-${index}`, ram);
+      print(
+        `Purchased server pserv-${index} with ${ram}GB of RAM for \$${getPurchasedServerCost(
           ram
         )}.`
       );
       index++;
     }
 
-    await ns.sleep(1000);
+    await sleep(1000);
   }
-  ns.tprint('Finished buying servers.');
+  tprint('Finished buying servers.');
 }

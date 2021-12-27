@@ -1,6 +1,7 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-  target = ns.args[0];
-  ns.connect(target);
-  ns.installBackdoor(target);
+  const { args, connect, installBackdoor } = ns;
+  target = args[0];
+  connect(target);
+  installBackdoor(target);
 }
