@@ -1,0 +1,18 @@
+// target server
+var target = args[0];
+
+while (true) {
+  // if target's security level is greater than the target's minimum security level, weaken
+  if (getServerSecurityLevel(target) > getServerMinSecurityLevel(target) + 5) {
+    weaken(target);
+  }
+  // else if target's money level is less than 75 % of max money, grow
+  else if (getServerMoneyAvailable(target) < getServerMaxMoney(target) * 0.75) {
+    grow(target);
+  }
+  // else hack
+  else {
+    hack(target);
+  }
+  sleep(1000);
+}
