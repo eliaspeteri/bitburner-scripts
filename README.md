@@ -26,25 +26,25 @@ An edited version of the template script, adding dynamic targets as a feature th
 
 ## Startup
 
-### startup.ns
+### startup.js
 
-I use _startup.ns_ which kickstarts buying servers, configuring them and running _hack.script_, managing Hacknet nodes with _hacknet.ns_, starting custom stats widget and finally launches a monitor program to keep an eye on the current target.
+I use _startup.js_ which kickstarts buying servers, configuring them and running _hack.script_, managing Hacknet nodes with _hacknet.js_, starting custom stats widget and finally launches a monitor program to keep an eye on the current target.
 
 ## Hacknet
 
-### hacknet.ns
+### hacknet.js
 
-_hacknet.ns_ attempts to buy 16 nodes, max them out and when completed, incrementally increases the number of nodes and maxes those out, too.
+_hacknet.js_ attempts to buy 16 nodes, max them out and when completed, incrementally increases the number of nodes and maxes those out, too. It might be useful to disable this after a while so all the money isn't spent on Hacknet nodes.
 
 ## Helper scripts
 
-### backdoor.ns
+### backdoor.js
 
 This script attempts to install a backdoor on the target server given in the runtime arguments.
 
 **NB**: You need to advance in the story enough to unlock the use of _connect()_ and _installBackdoor()_.
 
-### killall.ns
+### killall.js
 
 This script attempts to kill all processes on target server given the runtime arguments.
 
