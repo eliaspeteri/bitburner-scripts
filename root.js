@@ -9,7 +9,6 @@ export async function main(ns) {
     httpworm,
     nuke,
     relaysmtp,
-    scp,
     sqlinject,
     tprint
   } = ns;

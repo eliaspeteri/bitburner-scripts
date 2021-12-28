@@ -1,9 +1,12 @@
+// Credit to lethern at Bitburner Discord for parts of the code
+
 /** @param {NS} ns **/
 export async function main(ns) {
   const {
     args,
     exec,
     getHackingLevel,
+    getHostname,
     getPurchasedServers,
     getServerMaxMoney,
     getServerMaxRam,
@@ -13,80 +16,54 @@ export async function main(ns) {
     hasRootAccess,
     kill,
     killall,
+    scan,
     scp,
     sleep,
     tprint
   } = ns;
 
-  const hackingScript = '/scripts/hack.script';
+  const host = getHostname();
+  const hackingScript = '/scripts/hack.js';
   const debug = args[0];
   var target = 'n00dles';
   var targetUpdated = false;
   var totalThreads = 0;
 
-  const servers = [
-    'home',
-    'n00dles',
-    'foodnstuff',
-    'max-hardware',
-    'sigma-cosmetics',
-    'joesguns',
-    'zer0',
-    'neo-net',
-    'crush-fitness',
-    'rho-construction',
-    'aerocorp',
-    'global-pharm',
-    'aevum-police',
-    'hong-fang-tea',
-    'CSEC',
-    'phantasy',
-    'comptek',
-    'netlink',
-    'rothman-uni',
-    'harakiri-sushi',
-    'nectar-net',
-    'iron-gym',
-    'silver-helix',
-    'johnson-ortho',
-    'I.I.I.I',
-    'summit-uni',
-    'alpha-ent',
-    'snap-fitness',
-    'omnia',
-    'icarus',
-    'taiyang-digital',
-    'univ-energy',
-    'infocomm',
-    'deltaone',
-    'syscore',
-    'lexo-corp',
-    'omega-net',
-    'the-hub',
-    'zb-institute',
-    'millenium-fitness',
-    'snap-fitness',
-    'galactic-cyber',
-    'unitalife',
-    'defcomm',
-    'solaris',
-    'nova-med',
-    'zeus-med',
-    'zb-def',
-    'avmnite-02h',
-    'catalyst'
-  ]; // servers
+  // Find neighboring servers
+  function scanServers() {
+    let serversFound = new Set();
+    let origin = host;
+
+    let stack = [];
+    stack.push(origin);
+    while (stack.length > 0) {
+      let server = stack.pop();
+      if (!serversFound.has(server)) {
+        serversFound.add(server);
+        let neighbors = scan(server);
+        for (let neighbor of neighbors) {
+          if (!serversFound.has(neighbor)) {
+            stack.push(neighbor);
+          } // if-statement
+        } // for-of-loop
+      } // if-statement
+    } // while-loop
+    return Array.from(serversFound);
+  } // scanServers()
+
+  // Create an array of all found servers
+  const servers = scanServers();
 
   // calculates max threads available
-  function calculateThreads(script, hostname) {
+  function calculateThreads(script, server) {
     const [maxRam, usedRam, scriptRam] = [
-      getServerMaxRam(hostname),
-      getServerUsedRam(hostname),
+      getServerMaxRam(server),
+      getServerUsedRam(server),
       getScriptRam(script)
     ];
     const availableRam = maxRam - usedRam;
     if (debug) {
-      tprint(`Calculating amount of threads for: ${hostname}`);
+      tprint(`Calculating amount of threads for: ${server}`);
       tprint(`RAM available: ${availableRam}`);
       tprint(`Script RAM required: ${scriptRam}`);
     } // if-statement
@@ -98,7 +75,9 @@ export async function main(ns) {
   // executes the hacking script on a server
   function executeHack(server) {
     var threads = calculateThreads(hackingScript, server);
-    if (server == 'home') threads -= 1;
+
+    // Leaving some memory free to run other programs
+    if (server == host) threads -= 5;
     if (debug) {
       tprint(`server: ${server}`);
       tprint(`threads: ${threads}`);
@@ -138,7 +117,7 @@ export async function main(ns) {
     for (var i = 0; i < getPurchasedServers().length; i++) {
       const serv = getPurchasedServers()[i];
 
-      await scp(hackingScript, 'home', serv);
+      await scp(hackingScript, host, serv);
 
       try {
         executeHack(serv);
@@ -153,10 +132,10 @@ export async function main(ns) {
     if (targetUpdated) {
       for (var i = 0; i < servers.length; i++) {
         const serv = servers[i];
-        exec('/scripts/root.js', 'home', 1, serv, debug);
-        await scp(hackingScript, 'home', serv);
+        exec('/scripts/root.js', host, 1, serv, debug);
+        await scp(hackingScript, host, serv);
 
-        if (serv == 'home') {
+        if (serv == host) {
           kill('/scripts/bitburner/monitor.js', 'home', target);
           exec('/scripts/bitburner/monitor.js', 'home', 1, target);
           executeHack(serv);
