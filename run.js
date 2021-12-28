@@ -89,7 +89,7 @@ export async function main(ns) {
       tprint(`Calculating amount of threads for: ${hostname}`);
       tprint(`RAM available: ${availableRam}`);
       tprint(`Script RAM required: ${scriptRam}`);
-    }
+    } // if-statement
     const threads = Math.floor(availableRam / scriptRam);
     totalThreads += threads;
     return threads;
@@ -97,7 +97,8 @@ export async function main(ns) {
 
   // executes the hacking script on a server
   function executeHack(server) {
-    const threads = calculateThreads(hackingScript, server);
+    var threads = calculateThreads(hackingScript, server);
+    if (server == 'home') threads -= 1;
     if (debug) {
       tprint(`server: ${server}`);
       tprint(`threads: ${threads}`);
@@ -149,40 +150,41 @@ export async function main(ns) {
     } // for-loop (purchased servers)
 
     /* goes through the list of hacked servers and starts the hacking script on them one by one */
-    for (var i = 0; i < servers.length; i++) {
-      const serv = servers[i];
-      exec('/scripts/root.js', 'home', 1, serv, debug);
-      await scp(hackingScript, 'home', serv);
+    if (targetUpdated) {
+      for (var i = 0; i < servers.length; i++) {
+        const serv = servers[i];
+        exec('/scripts/root.js', 'home', 1, serv, debug);
+        await scp(hackingScript, 'home', serv);
 
-      if (targetUpdated) {
         if (serv == 'home') {
           kill('/scripts/bitburner/monitor.js', 'home', target);
           exec('/scripts/bitburner/monitor.js', 'home', 1, target);
           executeHack(serv);
-        } else {
+        } // if-statemente
+        else {
           killall(serv);
           executeHack(serv);
-        }
-        tprint(`Spun up ${totalThreads} threads.`);
+        } // else-statemente
         targetUpdated = false;
-      } // if-statement
 
-      if (
-        getServerMaxRam(serv) - getServerUsedRam(serv) > 0 &&
-        hasRootAccess(serv) &&
-        getHackingLevel() >= getServerRequiredHackingLevel(serv) &&
-        serv != 'home'
-      ) {
-        try {
-          killall(serv);
-          executeHack(serv);
-        } catch (error) {
-          // try
-          tprint(String(error));
-          tprint(`server: ${serv}`);
-        } // catch
-      } // if-statement
-    } // for-loop (hacked servers)
+        if (
+          getServerMaxRam(serv) - getServerUsedRam(serv) > 0 &&
+          hasRootAccess(serv) &&
+          getHackingLevel() >= getServerRequiredHackingLevel(serv) &&
+          serv != 'home'
+        ) {
+          try {
+            killall(serv);
+            executeHack(serv);
+          } catch (error) {
+            // try
+            tprint(String(error));
+            tprint(`server: ${serv}`);
+          } // catch
+        } // if-statement
+      } // for-loop (hacked servers)
+      tprint(`Spun up ${totalThreads} threads.`);
+    }
     await sleep(60000);
   } // while-loop
-}
+} // main(ns)
