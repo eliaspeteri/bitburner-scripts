@@ -1,8 +1,28 @@
 /** @param {NS} ns **/
 export async function main(ns) {
+  const {
+    args,
+    exec,
+    getHackingLevel,
+    getPurchasedServers,
+    getServerMaxMoney,
+    getServerMaxRam,
+    getServerUsedRam,
+    getScriptRam,
+    getServerRequiredHackingLevel,
+    hasRootAccess,
+    kill,
+    killall,
+    scp,
+    sleep,
+    tprint
+  } = ns;
+
   const hackingScript = '/scripts/hack.script';
+  const debug = args[0];
   var target = 'n00dles';
   var targetUpdated = false;
+  var totalThreads = 0;
 
   const servers = [
     'home',
@@ -57,25 +77,6 @@ export async function main(ns) {
     'catalyst'
   ]; // servers
 
-  const {
-    args,
-    exec,
-    getHackingLevel,
-    getPurchasedServers,
-    getServerMaxMoney,
-    getServerMaxRam,
-    getServerUsedRam,
-    getScriptRam,
-    getServerRequiredHackingLevel,
-    hasRootAccess,
-    killall,
-    scp,
-    sleep,
-    tprint
-  } = ns;
-
-  const debug = args[0];
-
   // calculates max threads available
   function calculateThreads(script, hostname) {
     const [maxRam, usedRam, scriptRam] = [
@@ -90,6 +91,7 @@ export async function main(ns) {
       tprint(`Script RAM required: ${scriptRam}`);
     }
     const threads = Math.floor(availableRam / scriptRam);
+    totalThreads += threads;
     return threads;
   } // calculateThreads()
 
@@ -152,9 +154,17 @@ export async function main(ns) {
       exec('/scripts/root.js', 'home', 1, serv, debug);
       await scp(hackingScript, 'home', serv);
 
-      if (targetUpdated && serv != 'home') {
-        killall(serv);
-        executeHack(serv);
+      if (targetUpdated) {
+        if (serv == 'home') {
+          kill('/scripts/bitburner/monitor.js', 'home', target);
+          exec('/scripts/bitburner/monitor.js', 'home', 1, target);
+          executeHack(serv);
+        } else {
+          killall(serv);
+          executeHack(serv);
+        }
+        tprint(`Spun up ${totalThreads} threads.`);
+        targetUpdated = false;
       } // if-statement
 
       if (
@@ -173,7 +183,6 @@ export async function main(ns) {
         } // catch
       } // if-statement
     } // for-loop (hacked servers)
-    targetUpdated = false;
     await sleep(60000);
   } // while-loop
 }

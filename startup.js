@@ -1,6 +1,6 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-  const debug = true;
+  const debug = false;
 
   const { exec, serverExists, tprint } = ns;
 
