@@ -71,9 +71,8 @@ export async function main(ns) {
     while (numNodes() < maxNodes) {
       var res = purchaseNode();
       print(`Purchased hacknet Node with index ${res}.`);
-      await sleep(1000);
+      await sleep(3000);
     }
-    maxNodes++;
     await sleep(1000);
   }
 }
