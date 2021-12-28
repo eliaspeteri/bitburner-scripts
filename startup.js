@@ -4,17 +4,13 @@ export async function main(ns) {
 
   const { exec, serverExists, tprint } = ns;
 
-  if (debug) tprint('Attempting to start /scripts/purchaseServers.js');
   // Start buying servers
-  exec('/scripts/purchaseServers.js', 'home', 1, 2048);
+  if (debug) tprint('Attempting to start /scripts/purchaseServers.js');
+  exec('/scripts/purchaseServers.js', 'home', 1, 2048, false);
 
-  if (debug) tprint('Attempting to start /scripts/bitburner/custom_stats.js');
   // Start custom stats
+  if (debug) tprint('Attempting to start /scripts/bitburner/custom_stats.js');
   exec('/scripts/bitburner/custom_stats.js', 'home');
-
-  if (debug) tprint('Attempting to start /scripts/run.js');
-  // Start main program that handles hacking and allocating servers
-  exec('/scripts/run.js', 'home', 1, debug);
 
   // (Re)start Hacknet server
   if (serverExists('hacknet')) {
@@ -23,4 +19,8 @@ export async function main(ns) {
     if (debug) tprint('Attempting to start /scripts/hacknet.js');
     ns.exec('/scripts/hacknet.js', 'hacknet');
   }
+
+  // Start main program that handles hacking and allocating servers
+  if (debug) tprint('Attempting to start /scripts/run.js');
+  exec('/scripts/run.js', 'home', 1, debug);
 }
