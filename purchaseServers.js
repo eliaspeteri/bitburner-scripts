@@ -49,7 +49,7 @@ export async function main(ns) {
       for (let i = 0; i < numServers; i++) {
         purchaseServer(`pserv-${i}`, ram);
         print(
-          `Purchased server pserv-${i} with ${ram}GB of RAM for \$${getPurchasedServerCost(
+          `Purchased server pserv-${i} with ${ram}GB of RAM for $${getPurchasedServerCost(
             ram
           )}.`
         );
