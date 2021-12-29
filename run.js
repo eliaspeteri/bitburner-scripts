@@ -15,7 +15,6 @@ export async function main(ns) {
     getScriptRam,
     getServerRequiredHackingLevel,
     hasRootAccess,
-    kill,
     killall,
     scan,
     scp,
@@ -92,8 +91,6 @@ export async function main(ns) {
       hasRootAccess(server)
     ) {
       tprint(`Target updated: ${target} -> ${server}.`);
-      kill('/scripts/bitburner/monitor.js', host, target);
-      exec('/scripts/bitburner/monitor.js', host, 1, target);
       target = server;
       tprint(`Currently targeting ${target}.`);
       targetUpdated = true;
