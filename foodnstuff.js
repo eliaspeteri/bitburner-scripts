@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 export async function main(ns) {
   ns.print("'foodnstuff' hacking initiated.");
   while (true) {
@@ -5,6 +6,6 @@ export async function main(ns) {
     await ns.grow('foodnstuff');
     await ns.weaken('foodnstuff');
     ns.print(ns.args);
-    ns.sleep(3000);
+    await ns.sleep(3000);
   }
 }
