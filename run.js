@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 // Credit to lethern at Bitburner Discord for parts of the code
 
 /** @param {NS} ns **/
@@ -25,16 +26,22 @@ export async function main(ns) {
   const host = getHostname();
   const hackingScript = '/scripts/hack.js';
   const debug = args[0];
-  var target = 'n00dles';
-  var targetUpdated = false;
-  var totalThreads = 0;
+  let target = 'n00dles';
+  let targetUpdated = true;
+  let totalThreads = 0;
 
-  // Find neighboring servers
+  if (debug) {
+    tprint('called /scripts/run.js');
+  }
+
   function scanServers() {
+    if (debug) {
+      tprint('called scanServers');
+    }
     let serversFound = new Set();
     let origin = host;
-
     let stack = [];
+
     stack.push(origin);
     while (stack.length > 0) {
       let server = stack.pop();
@@ -49,7 +56,7 @@ export async function main(ns) {
       } // if-statement
     } // while-loop
     return Array.from(serversFound);
-  } // scanServers()
+  }
 
   // Create an array of all found servers
   const servers = scanServers();
@@ -72,12 +79,40 @@ export async function main(ns) {
     return threads;
   } // calculateThreads()
 
+  function calculateTarget(server) {
+    if (debug) {
+      tprint('called calculateTarget');
+    }
+    const playerHackingLevel = getHackingLevel();
+    const serverHackingLevel = getServerRequiredHackingLevel(server);
+    if (
+      serverHackingLevel > getServerRequiredHackingLevel(target) &&
+      playerHackingLevel >= serverHackingLevel &&
+      getServerMaxMoney(server) > getServerMaxMoney(target) &&
+      hasRootAccess(server)
+    ) {
+      tprint(`Target updated: ${target} -> ${server}.`);
+      kill('/scripts/bitburner/monitor.js', host, target);
+      exec('/scripts/bitburner/monitor.js', host, 1, target);
+      target = server;
+      tprint(`Currently targeting ${target}.`);
+      targetUpdated = true;
+    } // if-statement
+  } // calculateTarget()
+
+  function gainRootAccess(server) {
+    if (debug) {
+      tprint('called gainRootAccess');
+    }
+    exec('/scripts/root.js', host, 1, server, debug);
+  } // gainRootAccess()
+
   // executes the hacking script on a server
   function executeHack(server) {
     var threads = calculateThreads(hackingScript, server);
 
     // Leaving some memory free to run other programs
-    if (server == host) threads -= 5;
+    if (server == host) threads -= 10;
     if (debug) {
       tprint(`server: ${server}`);
       tprint(`threads: ${threads}`);
@@ -96,29 +131,16 @@ export async function main(ns) {
   // main loop begins here
   while (true) {
     // calculates server with highest hacking level required, that the player has access to
-    const playerHackingLevel = getHackingLevel();
-    for (var i = 0; i < servers.length; i++) {
-      const server = servers[i];
-      const serverHackingLevel = getServerRequiredHackingLevel(server);
-      if (
-        serverHackingLevel > getServerRequiredHackingLevel(target) &&
-        playerHackingLevel >= serverHackingLevel &&
-        getServerMaxMoney(server) > getServerMaxMoney(target) &&
-        hasRootAccess(server)
-      ) {
-        tprint(`Target updated: ${target} -> ${server}.`);
-        target = server;
-        tprint(`Currently targeting ${target}.`);
-        targetUpdated = true;
-      } // if-statement
+    for (const server of servers) {
+      if (!hasRootAccess(server)) {
+        gainRootAccess(server);
+      }
+      calculateTarget(server);
     } // for-loop
 
     /* starts hacking scripts on the purchased servers using the target */
-    for (var i = 0; i < getPurchasedServers().length; i++) {
-      const serv = getPurchasedServers()[i];
-
+    for (const serv of getPurchasedServers()) {
       await scp(hackingScript, host, serv);
-
       try {
         executeHack(serv);
       } catch (error) {
@@ -130,20 +152,12 @@ export async function main(ns) {
 
     /* goes through the list of hacked servers and starts the hacking script on them one by one */
     if (targetUpdated) {
-      for (var i = 0; i < servers.length; i++) {
-        const serv = servers[i];
-        exec('/scripts/root.js', host, 1, serv, debug);
+      for (const serv of servers) {
+        gainRootAccess(serv);
         await scp(hackingScript, host, serv);
-
         if (serv == host) {
-          kill('/scripts/bitburner/monitor.js', 'home', target);
-          exec('/scripts/bitburner/monitor.js', 'home', 1, target);
           executeHack(serv);
-        } // if-statemente
-        else {
-          killall(serv);
-          executeHack(serv);
-        } // else-statemente
+        } // if-statement
         targetUpdated = false;
 
         if (
