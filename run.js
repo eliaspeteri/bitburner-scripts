@@ -20,11 +20,12 @@ export async function main(ns) {
     scan,
     scp,
     sleep,
-    tprint
+    tprint,
+    write
   } = ns;
 
   const host = getHostname();
-  const hackingScript = '/scripts/hack.js';
+  const hackScript = '/scripts/hack.js';
   const debug = args[0];
   let target = 'n00dles';
   let targetUpdated = true;
@@ -32,6 +33,10 @@ export async function main(ns) {
 
   if (debug) {
     tprint('called /scripts/run.js');
+  }
+
+  async function log(message) {
+    await write('/logs/run.js.txt', message, 'a');
   }
 
   function scanServers() {
@@ -62,7 +67,7 @@ export async function main(ns) {
   const servers = scanServers();
 
   // calculates max threads available
-  function calculateThreads(script, server) {
+  async function calculateThreads(script, server) {
     const [maxRam, usedRam, scriptRam] = [
       getServerMaxRam(server),
       getServerUsedRam(server),
@@ -70,16 +75,16 @@ export async function main(ns) {
     ];
     const availableRam = maxRam - usedRam;
     if (debug) {
-      tprint(`Calculating amount of threads for: ${server}`);
-      tprint(`RAM available: ${availableRam}`);
-      tprint(`Script RAM required: ${scriptRam}`);
+      const debugMsg = `Calculating amount of threads for: ${server}\nRAM available: ${availableRam}\nScript RAM required: ${scriptRam}`;
+      tprint(debugMsg);
+      await log(debugMsg);
     } // if-statement
     const threads = Math.floor(availableRam / scriptRam);
     totalThreads += threads;
     return threads;
   } // calculateThreads()
 
-  function calculateTarget(server) {
+  async function calculateTarget(server) {
     if (debug) {
       tprint('called calculateTarget');
     }
@@ -91,9 +96,14 @@ export async function main(ns) {
       getServerMaxMoney(server) > getServerMaxMoney(target) &&
       hasRootAccess(server)
     ) {
-      tprint(`Target updated: ${target} -> ${server}.`);
+      const targetUpdatedMsg = `${new Date().toISOString()}: Target updated: ${target} -> ${server}.`;
+      tprint(targetUpdatedMsg);
+      await log(targetUpdatedMsg);
       target = server;
-      tprint(`Currently targeting ${target}.`);
+      if (args[1]) target = args[1];
+      const currentTargetMsg = `${new Date().toISOString()}: Currently targeting ${target}.`;
+      tprint(currentTargetMsg);
+      await log(currentTargetMsg);
       targetUpdated = true;
     } // if-statement
   } // calculateTarget()
@@ -106,28 +116,30 @@ export async function main(ns) {
   } // gainRootAccess()
 
   // executes the hacking script on a server
-  function executeHack(server) {
-    let threads = calculateThreads(hackingScript, server);
+  async function executeHack(server) {
+    let threads = await calculateThreads(hackScript, server);
     try {
       for (const process of ps(server)) {
         const pFilename = process.filename;
         const pid = process.pid;
-        if (pFilename == '/scripts/hack.js') kill(pid);
+        if (pFilename == 'hack.js') kill(pid);
       }
     } catch (error) {
       // try
       tprint(String(error));
     } // catch
-    // Leaving some memory free to run other programs
-    if (server == host) threads -= 10;
+    // Leaving some memory free on home to run other programs
+    // if (server == host) threads -= 20;
+
     if (debug) {
-      tprint(`server: ${server}`);
-      tprint(`threads: ${threads}`);
-      tprint(`target: ${target}`);
+      const debugMsg = `server: ${server}\nthreads: ${threads}\ntarget: ${target}`;
+      tprint(debugMsg);
+      await log(debugMsg);
     } // if-statement
+
     if (threads > 0) {
       exec(
-        hackingScript,
+        hackScript,
         server,
         threads,
         target // target
@@ -142,42 +154,34 @@ export async function main(ns) {
       if (!hasRootAccess(server)) {
         gainRootAccess(server);
       }
-      calculateTarget(server);
+      await calculateTarget(server);
     } // for-loop
 
     if (targetUpdated) {
       totalThreads = 0;
-      executeHack(host);
-      /* starts hacking scripts on the purchased servers using the target */
-      for (const serv of getPurchasedServers()) {
-        await scp(hackingScript, host, serv);
-        try {
-          executeHack(serv);
-        } catch (error) {
-          // try
-          tprint(String(error));
-          tprint(`server: ${serv}`);
-        } // catch
-      } // for-loop (purchased servers)
-      /* goes through the list of hacked servers and starts the hacking script on them one by one */
-      for (const serv of servers) {
+      /* starts hacking scripts using the target */
+      for (const serv of [host, ...servers, ...getPurchasedServers()]) {
         gainRootAccess(serv);
-        await scp(hackingScript, host, serv);
+        await scp(hackScript, host, serv);
         if (
           getServerMaxRam(serv) - getServerUsedRam(serv) > 0 &&
           hasRootAccess(serv) &&
           getHackingLevel() >= getServerRequiredHackingLevel(serv)
-        ) {
+        )
           try {
-            executeHack(serv);
+            await executeHack(serv);
           } catch (error) {
             // try
-            tprint(String(error));
-            tprint(`server: ${serv}`);
+            const debugMsg = `${new Date().toISOString()}: ${serv} returned an error: ${String(
+              error
+            )}`;
+            tprint(debugMsg);
+            await log(debugMsg);
           } // catch
-        } // if-statement
-      } // for-loop (hacked servers)
-      tprint(`Spun up ${totalThreads} threads.`);
+      } // for-loop
+      const debugMsg = `${new Date().toISOString()}: Spun up ${totalThreads} threads.`;
+      tprint(debugMsg);
+      await log(debugMsg);
     }
     targetUpdated = false;
     await sleep(30000);
