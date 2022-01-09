@@ -153,6 +153,7 @@ export async function main(ns) {
     for (const server of servers) {
       if (!hasRootAccess(server)) {
         gainRootAccess(server);
+        await sleep(1);
       }
       await calculateTarget(server);
     } // for-loop
@@ -162,6 +163,7 @@ export async function main(ns) {
       /* starts hacking scripts using the target */
       for (const serv of [host, ...servers, ...getPurchasedServers()]) {
         gainRootAccess(serv);
+        await sleep(1);
         await scp(hackScript, host, serv);
         if (
           getServerMaxRam(serv) - getServerUsedRam(serv) > 0 &&
