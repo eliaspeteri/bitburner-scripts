@@ -10,10 +10,15 @@ export async function main(ns) {
     nuke,
     relaysmtp,
     sqlinject,
-    tprint
+    tprint,
+    write
   } = ns;
   const serv = args[0];
   const debug = args[1];
+
+  async function log(message) {
+    await write('/logs/root.js.txt', message, 'a');
+  }
   try {
     if (!hasRootAccess(serv)) {
       fileExists('brutessh.exe') ? brutessh(serv) : null;
@@ -24,8 +29,11 @@ export async function main(ns) {
 
       nuke(serv);
 
-      if (hasRootAccess(serv)) tprint(`Hacked into ${serv}.`);
-      else if (debug) {
+      if (hasRootAccess(serv)) {
+        const debugMsg = `Hacked into ${serv}.`;
+        tprint(debugMsg);
+        log(`${new Date().toISOString()}: ${debugMsg}.`);
+      } else if (debug) {
         tprint(
           `${serv}: Hacking level too small. Player hack level: ${ns.getHackingLevel()}. Required: ${ns.getServerRequiredHackingLevel(
             serv
